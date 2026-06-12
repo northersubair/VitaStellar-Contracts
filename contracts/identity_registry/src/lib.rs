@@ -2780,3 +2780,61 @@ mod tests {
 
     /// Deposit stake for a healthcare provider.
     /// The minimum stake is configurable by governance.
+
+// Health check tests added for Issue #13
+#[cfg(test)]
+mod health_check_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    #[test]
+    fn test_health_check_returns_ok_when_initialized() {
+        let env = Env::default();
+        env.mock_all_auths();
+        env.ledger().set_timestamp(10_000);
+        let rbac_id = env.register_contract(None, MockRbac);
+        let rbac_client = MockRbacClient::new(&env, &rbac_id);
+        let contract_id = env.register_contract(None, IdentityRegistryContract);
+        let client = IdentityRegistryContractClient::new(&env, &contract_id);
+        let owner = Address::generate(&env);
+        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
+        let network_id = String::from_str(&env, "testnet");
+        client.initialize(&owner, &network_id, &rbac_id);
+
+        let (status, version, timestamp) = client.health_check();
+        assert_eq!(status, symbol_short!("OK"));
+        assert_eq!(version, 1);
+        assert_eq!(timestamp, 10_000);
+    }
+
+    #[test]
+    fn test_health_check_returns_not_init_when_not_initialized() {
+        let env = Env::default();
+        env.mock_all_auths();
+        env.ledger().set_timestamp(10_000);
+        let contract_id = env.register_contract(None, IdentityRegistryContract);
+        let client = IdentityRegistryContractClient::new(&env, &contract_id);
+
+        let (status, _version, _timestamp) = client.health_check();
+        assert_eq!(status, symbol_short!("NOT_INIT"));
+    }
+
+    #[test]
+    fn test_health_check_returns_paused_when_paused() {
+        let env = Env::default();
+        env.mock_all_auths();
+        env.ledger().set_timestamp(10_000);
+        let rbac_id = env.register_contract(None, MockRbac);
+        let rbac_client = MockRbacClient::new(&env, &rbac_id);
+        let contract_id = env.register_contract(None, IdentityRegistryContract);
+        let client = IdentityRegistryContractClient::new(&env, &contract_id);
+        let owner = Address::generate(&env);
+        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
+        let network_id = String::from_str(&env, "testnet");
+        client.initialize(&owner, &network_id, &rbac_id);
+        client.pause(&owner);
+
+        let (status, _version, _timestamp) = client.health_check();
+        assert_eq!(status, symbol_short!("PAUSED"));
+    }
+}
