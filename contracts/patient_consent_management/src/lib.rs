@@ -159,7 +159,7 @@ impl PatientConsentManagement {
         Self::require_not_paused(&env)?;
 
         // Validate batch size
-        if grantees.len() == 0 {
+        if grantees.is_empty() {
             return Err(Error::InvalidInput);
         }
         if grantees.len() > Self::MAX_BATCH_SIZE {
