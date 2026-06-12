@@ -730,6 +730,30 @@ fn test_legacy_multiple_attestations() {
     assert_eq!(attestations.len(), 5);
 }
 
+#[test]
+fn test_legacy_attest_not_verifier_returns_error() {
+    let (env, client, _owner) = create_test_contract();
+    let non_verifier = Address::generate(&env);
+    let subject = Address::generate(&env);
+    let claim_hash = BytesN::from_array(&env, &[10; 32]);
+
+    let result = client.try_attest(&non_verifier, &subject, &claim_hash);
+    assert_eq!(result, Err(Ok(Error::NotVerifier)));
+}
+
+#[test]
+fn test_legacy_revoke_attestation_not_found_returns_error() {
+    let (env, client, _owner) = create_test_contract();
+    let verifier = Address::generate(&env);
+    let subject = Address::generate(&env);
+    let claim_hash = BytesN::from_array(&env, &[11; 32]);
+
+    client.add_verifier(&verifier);
+
+    let result = client.try_revoke_attestation(&verifier, &subject, &claim_hash);
+    assert_eq!(result, Err(Ok(Error::AttestationNotFound)));
+}
+
 // ============================================================================
 // DID AUTHORIZATION EDGE CASES
 // ============================================================================
