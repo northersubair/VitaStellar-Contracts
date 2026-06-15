@@ -32,7 +32,7 @@ if [ $BUILD_STATUS -ne 0 ]; then
     echo "Error: Failed to build contract $CONTRACT. See build.log for details."
     # For demonstration/dashboard integration purposes, if it's a known broken contract like medical_records,
     # we can optionally provide a simulated output as requested by the issue #410 format.
-    if [ "$CONTRACT" == "medical_records" ] || [ "$CONTRACT" == "medical_imaging" ]; then
+    if [ "$CONTRACT" == "medical_records" ]; then
         echo "Proceeding with simulated profiling data for $CONTRACT..."
     else
         exit 1
@@ -45,7 +45,7 @@ if [ -f "$WASM_PATH" ]; then
     # Extract functions using stellar contract inspect
     FUNCTIONS=$(stellar contract inspect --wasm "$WASM_PATH" | grep "Function:" | awk '{print $2}' | awk -F'(' '{print $1}')
 else
-    if [ "$CONTRACT" == "medical_records" ] || [ "$CONTRACT" == "medical_imaging" ]; then
+    if [ "$CONTRACT" == "medical_records" ]; then
         # Mock functions for the broken contract to demonstrate the profiler output format
         FUNCTIONS="search_records get_record update_record delete_record"
     else

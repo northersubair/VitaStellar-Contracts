@@ -1,4 +1,5 @@
 {
+  "private": true,
   "scripts": {
     "events:generate": "node scripts/events/generate-registry.mjs",
     "events:validate": "node scripts/events/validate.mjs",

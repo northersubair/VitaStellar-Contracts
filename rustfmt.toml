@@ -8,30 +8,17 @@ newline_style = "Auto"
 use_small_heuristics = "Default"
 
 # Imports
-imports_granularity = "Crate"
-imports_layout = "Mixed"
 group_imports = "StdExternalCrate"
 reorder_imports = true
 
 # Code organization
 reorder_modules = true
-reorder_impl_items = false
 
 # Function formatting
-fn_args_layout = "Tall"
-fn_return_indent = "WithArgs"
-where_layout = "Tall"
+fn_params_layout = "Tall"
 
 # Control flow
-control_brace_style = "AlwaysSameLine"
-match_arm_blocks = true
 match_block_trailing_comma = true
-match_expression_indent = "Block"
-
-# Comments
-wrap_comments = false
-comment_width = 100
-normalize_comments = true
 
 # Maximum widths
 max_width = 100

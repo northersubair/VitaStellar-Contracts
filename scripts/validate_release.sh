@@ -344,7 +344,7 @@ validate_migration_requirements() {
         local major=$(echo "$version" | cut -d. -f1)
         local minor=$(echo "$version" | cut -d. -f2)
         
-        if [[ "$minor" == "0" && "$major" > "1" ]]; then
+        if [[ "$minor" == "0" && "$major" -gt 1 ]]; then
             # This is a major release, check for migration guide
             local migration_guide="$PROJECT_ROOT/docs/migration/v$version.md"
             if [[ ! -f "$migration_guide" ]]; then

@@ -52,7 +52,13 @@ impl MedicalRecordGenerator {
     pub fn generate_medical_entries(env: &Env, count: usize) -> std::vec::Vec<MedicalEntry> {
         let mut entries = std::vec::Vec::new();
         let diagnoses = ["Diabetes", "Hypertension", "Asthma", "Migraine", "GERD"];
-        let medications = ["Metformin", "Lisinopril", "Albuterol", "Sumatriptan", "Omeprazole"];
+        let medications = [
+            "Metformin",
+            "Lisinopril",
+            "Albuterol",
+            "Sumatriptan",
+            "Omeprazole",
+        ];
 
         for i in 0..count {
             entries.push(MedicalEntry {
@@ -207,7 +213,12 @@ impl AccessLogGenerator {
     }
 
     /// Generate access log entry
-    pub fn generate_access_log(&mut self, env: &Env, accessor: &Address, resource_id: u64) -> AccessLog {
+    pub fn generate_access_log(
+        &mut self,
+        env: &Env,
+        accessor: &Address,
+        resource_id: u64,
+    ) -> AccessLog {
         self.counter += 1;
         AccessLog {
             log_id: self.counter as u64,
@@ -252,11 +263,11 @@ impl PropertyTestDataGenerator {
     /// Generate edge case amounts
     pub fn generate_edge_case_amounts() -> std::vec::Vec<u128> {
         std::vec![
-            0,                                   // Zero
-            1,                                   // Minimum
-            u128::MAX,                           // Maximum
-            u128::MAX / 2,                       // Half max
-            1_000_000_000_000_000_000,          // Large amount
+            0,                         // Zero
+            1,                         // Minimum
+            u128::MAX,                 // Maximum
+            u128::MAX / 2,             // Half max
+            1_000_000_000_000_000_000, // Large amount
         ]
     }
 
@@ -268,23 +279,17 @@ impl PropertyTestDataGenerator {
             .as_secs();
 
         std::vec![
-            0,              // Unix epoch
-            now,            // Current time
-            now + 86400,    // Tomorrow
-            now - 86400,    // Yesterday
-            u64::MAX / 2,   // Far future
+            0,            // Unix epoch
+            now,          // Current time
+            now + 86400,  // Tomorrow
+            now - 86400,  // Yesterday
+            u64::MAX / 2, // Far future
         ]
     }
 
     /// Generate boundary test values
     pub fn generate_boundary_values(min: u32, max: u32) -> std::vec::Vec<u32> {
-        std::vec![
-            min,
-            max,
-            min + 1,
-            max - 1,
-            (min + max) / 2,
-        ]
+        std::vec![min, max, min + 1, max - 1, (min + max) / 2,]
     }
 }
 

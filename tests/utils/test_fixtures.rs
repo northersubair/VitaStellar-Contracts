@@ -337,8 +337,7 @@ mod tests {
         assert!(team.admin.verified);
 
         let addresses = team.all_addresses();
-        let unique_addresses: std::collections::HashSet<_> =
-            addresses.iter().collect();
+        let unique_addresses: std::collections::HashSet<_> = addresses.iter().collect();
         assert_eq!(unique_addresses.len(), addresses.len());
 
         for doctor in team.doctors.iter() {

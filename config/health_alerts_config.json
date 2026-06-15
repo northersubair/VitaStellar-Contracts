@@ -69,9 +69,7 @@
     },
     "standard_contracts": {
       "contracts": [
-        "medical_record_backup",
-        "audit",
-        "aml"
+        "medical_record_backup"
       ],
       "interval_seconds": 300
     }

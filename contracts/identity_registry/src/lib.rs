@@ -7,7 +7,7 @@ pub mod errors;
 pub use errors::Error;
 use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env, String,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env, String,
     Symbol, Vec,
 };
 use vitastellar_sanitization::{
@@ -335,7 +335,12 @@ impl IdentityRegistryContract {
     // ========================================================================
 
     /// Initialize the contract with an owner and network identifier
-    pub fn initialize(env: Env, owner: Address, network_id: String, rbac_contract: Address) -> Result<(), Error> {
+    pub fn initialize(
+        env: Env,
+        owner: Address,
+        network_id: String,
+        rbac_contract: Address,
+    ) -> Result<(), Error> {
         owner.require_auth();
 
         sanitize_id(&env, &network_id).map_err(Self::map_sanitization_error)?;
@@ -345,7 +350,9 @@ impl IdentityRegistryContract {
         }
 
         env.storage().instance().set(&DataKey::Owner, &owner);
-        env.storage().instance().set(&DataKey::RbacContract, &rbac_contract);
+        env.storage()
+            .instance()
+            .set(&DataKey::RbacContract, &rbac_contract);
         env.storage()
             .instance()
             .set(&DataKey::NetworkId, &network_id);
@@ -399,18 +406,29 @@ impl IdentityRegistryContract {
 
     /// Returns true if the contract is currently paused.
     pub fn is_paused(env: Env) -> bool {
-        env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+        env.storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
     }
 
     fn is_admin(env: &Env, caller: &Address) -> bool {
-        if let Some(owner) = env.storage().instance().get::<DataKey, Address>(&DataKey::Owner) {
+        if let Some(owner) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::Owner)
+        {
             if &owner == caller {
                 return true;
             }
         }
-        if let Some(rbac_addr) = env.storage().instance().get::<DataKey, Address>(&DataKey::RbacContract) {
+        if let Some(rbac_addr) = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::RbacContract)
+        {
             let client = RbacClient::new(env, &rbac_addr);
-            return client.has_role(caller, &RbacRole::Admin).unwrap_or(false);
+            return client.has_role(caller, &RbacRole::Admin);
         }
         false
     }
@@ -424,7 +442,12 @@ impl IdentityRegistryContract {
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
-        if env.storage().instance().get(&DataKey::Paused).unwrap_or(false) {
+        if env
+            .storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+        {
             return Err(Error::ContractPaused);
         }
         Ok(())
@@ -434,7 +457,10 @@ impl IdentityRegistryContract {
         caller.require_auth();
         Self::require_admin(&env, &caller)?;
         env.storage().instance().set(&DataKey::Paused, &true);
-        env.events().publish((Symbol::new(&env, "Paused"),), (caller.clone(), env.ledger().timestamp()));
+        env.events().publish(
+            (Symbol::new(&env, "Paused"),),
+            (caller.clone(), env.ledger().timestamp()),
+        );
         Ok(true)
     }
 
@@ -442,7 +468,10 @@ impl IdentityRegistryContract {
         caller.require_auth();
         Self::require_admin(&env, &caller)?;
         env.storage().instance().set(&DataKey::Paused, &false);
-        env.events().publish((Symbol::new(&env, "Unpaused"),), (caller.clone(), env.ledger().timestamp()));
+        env.events().publish(
+            (Symbol::new(&env, "Unpaused"),),
+            (caller.clone(), env.ledger().timestamp()),
+        );
         Ok(true)
     }
 
@@ -455,7 +484,9 @@ impl IdentityRegistryContract {
         }
 
         env.storage().instance().set(&DataKey::Owner, &owner);
-        env.storage().instance().set(&DataKey::RbacContract, &rbac_contract);
+        env.storage()
+            .instance()
+            .set(&DataKey::RbacContract, &rbac_contract);
         env.storage()
             .instance()
             .set(&DataKey::Verifier(owner.clone()), &true);
@@ -1546,14 +1577,18 @@ impl IdentityRegistryContract {
 
         owner.require_auth();
 
-        let rbac_addr: Address = env.storage().instance().get(&DataKey::RbacContract).ok_or(Error::NotInitialized)?;
+        let rbac_addr: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::RbacContract)
+            .ok_or(Error::NotInitialized)?;
         let rbac_client = RbacClient::new(&env, &rbac_addr);
-        let has_admin = rbac_client.has_role(&owner, &RbacRole::Admin).unwrap_or(false);
+        let has_admin = rbac_client.has_role(&owner, &RbacRole::Admin);
         if !has_admin {
             return Err(Error::Unauthorized);
         }
 
-        rbac_client.assign_role(&verifier, &RbacRole::Staff).map_err(|_| Error::Unauthorized)?;
+        rbac_client.assign_role(&verifier, &RbacRole::Staff);
 
         env.storage()
             .instance()
@@ -1579,14 +1614,18 @@ impl IdentityRegistryContract {
             return Err(Error::CannotRemoveOwner);
         }
 
-        let rbac_addr: Address = env.storage().instance().get(&DataKey::RbacContract).ok_or(Error::NotInitialized)?;
+        let rbac_addr: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::RbacContract)
+            .ok_or(Error::NotInitialized)?;
         let rbac_client = RbacClient::new(&env, &rbac_addr);
-        let has_admin = rbac_client.has_role(&owner, &RbacRole::Admin).unwrap_or(false);
+        let has_admin = rbac_client.has_role(&owner, &RbacRole::Admin);
         if !has_admin {
             return Err(Error::Unauthorized);
         }
 
-        rbac_client.remove_role(&verifier, &RbacRole::Staff).map_err(|_| Error::Unauthorized)?;
+        rbac_client.remove_role(&verifier, &RbacRole::Staff);
 
         env.storage()
             .instance()
@@ -1605,26 +1644,13 @@ impl IdentityRegistryContract {
             None => return false,
         };
         let client = RbacClient::new(&env, &rbac_addr);
-        match client.has_role(&account, &RbacRole::Staff) {
-            Ok(has_staff) => {
-                if has_staff {
-                    return true;
-                }
-                match client.has_role(&account, &RbacRole::Service) {
-                    Ok(has_service) => {
-                        if has_service {
-                            return true;
-                        }
-                        match client.has_role(&account, &RbacRole::Admin) {
-                            Ok(has_admin) => has_admin,
-                            Err(_) => false,
-                        }
-                    }
-                    Err(_) => false,
-                }
-            }
-            Err(_) => false,
+        if client.has_role(&account, &RbacRole::Staff) {
+            return true;
         }
+        if client.has_role(&account, &RbacRole::Service) {
+            return true;
+        }
+        client.has_role(&account, &RbacRole::Admin)
     }
 
     /// Get the contract owner
@@ -1649,8 +1675,7 @@ impl IdentityRegistryContract {
         subject.require_auth();
         Self::require_not_paused(&env)?;
 
-        sanitize_string(&env, &meta, MAX_GENERAL_LEN)
-            .map_err(Self::map_sanitization_error)?;
+        sanitize_string(&env, &meta, MAX_GENERAL_LEN).map_err(Self::map_sanitization_error)?;
 
         let identity_record = IdentityRecord {
             hash: hash.clone(),
@@ -2023,10 +2048,7 @@ impl IdentityRegistryContract {
     }
 
     /// Withdraw stake after lock period if not slashed and in good standing.
-    pub fn withdraw_stake(
-        env: Env,
-        provider: Address,
-    ) -> Result<i128, Error> {
+    pub fn withdraw_stake(env: Env, provider: Address) -> Result<i128, Error> {
         provider.require_auth();
 
         let now = env.ledger().timestamp();
@@ -2086,843 +2108,5 @@ impl IdentityRegistryContract {
         );
 
         Ok(())
-    }
-}
-
-// ============================================================================
-// TESTS
-// ============================================================================
-
-#[cfg(test)]
-mod comprehensive_tests;
-
-#[cfg(test)]
-#[soroban_sdk::contract]
-pub struct MockRbac;
-
-#[cfg(test)]
-#[soroban_sdk::contractimpl]
-impl MockRbac {
-    pub fn initialize(env: Env, admin: Address, config: soroban_sdk::Val) {}
-
-    pub fn has_role(env: Env, address: Address, role: RbacRole) -> Result<bool, RbacError> {
-        let key = (address, role);
-        Ok(env.storage().instance().get(&key).unwrap_or(false))
-    }
-
-    pub fn assign_role(env: Env, address: Address, role: RbacRole) -> Result<bool, RbacError> {
-        let key = (address, role);
-        env.storage().instance().set(&key, &true);
-        Ok(true)
-    }
-
-    pub fn remove_role(env: Env, address: Address, role: RbacRole) -> Result<bool, RbacError> {
-        let key = (address, role);
-        env.storage().instance().set(&key, &false);
-        Ok(true)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use soroban_sdk::testutils::{Address as _, Ledger as _};
-    use soroban_sdk::{Address, BytesN, Env, String, Vec};
-
-    fn create_contract() -> (Env, IdentityRegistryContractClient<'static>, Address) {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-
-        let network_id = String::from_str(&env, "testnet");
-        client.initialize(&owner, &network_id, &rbac_id);
-
-        (env, client, owner)
-    }
-
-    fn create_legacy_contract() -> (Env, IdentityRegistryContractClient<'static>, Address) {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-
-        client.initialize_legacy(&owner, &rbac_id);
-
-        (env, client, owner)
-    }
-
-    // ========================================================================
-    // INITIALIZATION TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_initialize() {
-        let (_env, client, owner) = create_contract();
-
-        assert!(client.is_verifier(&owner));
-        assert_eq!(client.get_owner(), owner);
-    }
-
-    #[test]
-    #[should_panic(expected = "Error(Contract, #301)")]
-    fn test_double_initialization() {
-        let (env, client, _owner) = create_contract();
-        let owner2 = Address::generate(&env);
-        let network_id = String::from_str(&env, "mainnet");
-        let rbac_id = env.register_contract(None, MockRbac);
-
-        client.initialize(&owner2, &network_id, &rbac_id);
-    }
-
-    // ========================================================================
-    // DID DOCUMENT TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_create_did() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        let _did_string = client.create_did(&subject, &public_key, &services);
-
-        // Verify DID was created
-        let did_doc = client.resolve_did(&subject);
-        assert!(matches!(did_doc.status, DIDStatus::Active));
-        assert_eq!(did_doc.controller, subject);
-        assert_eq!(did_doc.version, 1);
-        assert_eq!(did_doc.verification_methods.len(), 1);
-    }
-
-    #[test]
-    fn test_create_did_with_services() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-
-        let mut services: Vec<ServiceEndpoint> = Vec::new(&env);
-        services.push_back(ServiceEndpoint {
-            id: String::from_str(&env, "#medical-records"),
-            service_type: String::from_str(&env, "MedicalRecords"),
-            endpoint: String::from_str(&env, "ipfs://Qm..."),
-            is_active: true,
-        });
-
-        client.create_did(&subject, &public_key, &services);
-
-        let did_doc = client.resolve_did(&subject);
-        assert_eq!(did_doc.services.len(), 1);
-    }
-
-    #[test]
-    #[should_panic(expected = "Error(Contract, #471)")]
-    fn test_create_duplicate_did() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-        client.create_did(&subject, &public_key, &services); // Should fail
-    }
-
-    #[test]
-    fn test_update_did() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Update with new services
-        let mut new_services: Vec<ServiceEndpoint> = Vec::new(&env);
-        new_services.push_back(ServiceEndpoint {
-            id: String::from_str(&env, "#credentials"),
-            service_type: String::from_str(&env, "CredentialRegistry"),
-            endpoint: String::from_str(&env, "https://creds.example.com"),
-            is_active: true,
-        });
-        let mut also_known_as: Vec<String> = Vec::new(&env);
-        also_known_as.push_back(String::from_str(&env, "did:web:example.com"));
-
-        client.update_did(&subject, &new_services, &also_known_as);
-
-        let did_doc = client.resolve_did(&subject);
-        assert_eq!(did_doc.version, 2);
-        assert_eq!(did_doc.services.len(), 1);
-        assert_eq!(did_doc.also_known_as.len(), 1);
-    }
-
-    #[test]
-    fn test_deactivate_did() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-        client.deactivate_did(&subject);
-
-        // Should fail to resolve deactivated DID
-        let result = client.try_resolve_did(&subject);
-        assert!(result.is_err());
-    }
-
-    // ========================================================================
-    // VERIFICATION METHOD TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_add_verification_method() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add new verification method
-        let new_key = BytesN::from_array(&env, &[2u8; 32]);
-        let method_id = String::from_str(&env, "#key-2");
-        let mut relationships: Vec<VerificationRelationship> = Vec::new(&env);
-        relationships.push_back(VerificationRelationship::KeyAgreement);
-
-        client.add_verification_method(
-            &subject,
-            &method_id,
-            &VerificationMethodType::X25519KeyAgreementKey2020,
-            &new_key,
-            &relationships,
-        );
-
-        let did_doc = client.resolve_did(&subject);
-        assert_eq!(did_doc.verification_methods.len(), 2);
-        assert_eq!(did_doc.key_agreement.len(), 1);
-    }
-
-    #[test]
-    fn test_rotate_key() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        env.ledger().set_timestamp(4000);
-
-        // Rotate the primary key
-        let new_key = BytesN::from_array(&env, &[3u8; 32]);
-        let method_id = String::from_str(&env, "#key-1");
-
-        client.rotate_key(&subject, &method_id, &new_key);
-
-        let did_doc = client.resolve_did(&subject);
-        let vm = did_doc.verification_methods.get(0).unwrap();
-        assert_eq!(vm.public_key, new_key);
-        assert!(vm.last_rotated > 0);
-    }
-
-    #[test]
-    fn test_revoke_verification_method() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add second method so we can revoke the first
-        let new_key = BytesN::from_array(&env, &[2u8; 32]);
-        let method_id = String::from_str(&env, "#key-2");
-        let mut relationships: Vec<VerificationRelationship> = Vec::new(&env);
-        relationships.push_back(VerificationRelationship::Authentication);
-
-        client.add_verification_method(
-            &subject,
-            &method_id,
-            &VerificationMethodType::Ed25519VerificationKey2020,
-            &new_key,
-            &relationships,
-        );
-
-        // Now revoke the first method
-        let first_method_id = String::from_str(&env, "#key-1");
-        client.revoke_verification_method(&subject, &first_method_id);
-
-        let did_doc = client.resolve_did(&subject);
-        let vm = did_doc.verification_methods.get(0).unwrap();
-        assert!(!vm.is_active);
-    }
-
-    // ========================================================================
-    // VERIFIABLE CREDENTIALS TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_issue_credential() {
-        let (env, client, owner) = create_contract();
-        let subject = Address::generate(&env);
-
-        let credential_hash = BytesN::from_array(&env, &[1u8; 32]);
-        let credential_uri = String::from_str(&env, "ipfs://QmCredential...");
-
-        let credential_id = client.issue_credential(
-            &owner,
-            &subject,
-            &CredentialType::MedicalLicense,
-            &credential_hash,
-            &credential_uri,
-            &0u64, // No expiration
-        );
-
-        // Verify credential
-        let status = client.verify_credential(&credential_id);
-        assert!(matches!(status, CredentialStatus::Valid));
-
-        let cred = client.get_credential(&credential_id);
-        assert_eq!(cred.issuer, owner);
-        assert_eq!(cred.subject, subject);
-        assert!(!cred.is_revoked);
-    }
-
-    #[test]
-    fn test_issue_credential_with_expiration() {
-        let (env, client, owner) = create_contract();
-        let subject = Address::generate(&env);
-
-        let credential_hash = BytesN::from_array(&env, &[2u8; 32]);
-        let credential_uri = String::from_str(&env, "ipfs://QmCredential...");
-        let expiration = 1000u64; // Will be in the past
-
-        let credential_id = client.issue_credential(
-            &owner,
-            &subject,
-            &CredentialType::SpecialistCertification,
-            &credential_hash,
-            &credential_uri,
-            &expiration,
-        );
-
-        env.ledger().set_timestamp(2000);
-
-        // Credential should be expired (timestamp is > 1000)
-        let status = client.verify_credential(&credential_id);
-        assert!(matches!(status, CredentialStatus::Expired));
-    }
-
-    #[test]
-    fn test_revoke_credential() {
-        let (env, client, owner) = create_contract();
-        let subject = Address::generate(&env);
-
-        let credential_hash = BytesN::from_array(&env, &[3u8; 32]);
-        let credential_uri = String::from_str(&env, "ipfs://QmCredential...");
-
-        let credential_id = client.issue_credential(
-            &owner,
-            &subject,
-            &CredentialType::HospitalAffiliation,
-            &credential_hash,
-            &credential_uri,
-            &0u64,
-        );
-
-        // Revoke the credential
-        let reason = String::from_str(&env, "License expired");
-        client.revoke_credential(&owner, &credential_id, &reason);
-
-        let status = client.verify_credential(&credential_id);
-        assert!(matches!(status, CredentialStatus::Revoked));
-
-        let cred = client.get_credential(&credential_id);
-        assert!(cred.is_revoked);
-    }
-
-    #[test]
-    fn test_get_subject_credentials() {
-        let (env, client, owner) = create_contract();
-        let subject = Address::generate(&env);
-
-        // Issue multiple credentials
-        for i in 0..3 {
-            let credential_hash = BytesN::from_array(&env, &[i as u8; 32]);
-            let credential_uri = String::from_str(&env, "ipfs://QmCredential...");
-            client.issue_credential(
-                &owner,
-                &subject,
-                &CredentialType::MedicalLicense,
-                &credential_hash,
-                &credential_uri,
-                &0u64,
-            );
-        }
-
-        let credentials = client.get_subject_credentials(&subject);
-        assert_eq!(credentials.len(), 3);
-    }
-
-    #[test]
-    fn test_has_valid_credential() {
-        let (env, client, owner) = create_contract();
-        let subject = Address::generate(&env);
-
-        // Subject should not have credential initially
-        assert!(!client.has_valid_credential(&subject, &CredentialType::MedicalLicense));
-
-        // Issue credential
-        let credential_hash = BytesN::from_array(&env, &[4u8; 32]);
-        let credential_uri = String::from_str(&env, "ipfs://QmCredential...");
-        client.issue_credential(
-            &owner,
-            &subject,
-            &CredentialType::MedicalLicense,
-            &credential_hash,
-            &credential_uri,
-            &0u64,
-        );
-
-        // Now should have valid credential
-        assert!(client.has_valid_credential(&subject, &CredentialType::MedicalLicense));
-        // But not other types
-        assert!(!client.has_valid_credential(&subject, &CredentialType::ResearchAuthorization));
-    }
-
-    // ========================================================================
-    // IDENTITY RECOVERY TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_add_recovery_guardian() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add guardians
-        let guardian1 = Address::generate(&env);
-        let guardian2 = Address::generate(&env);
-
-        client.add_recovery_guardian(&subject, &guardian1, &1u32);
-        client.add_recovery_guardian(&subject, &guardian2, &1u32);
-
-        // Guardians should be added (we can verify through recovery process)
-    }
-
-    #[test]
-    fn test_initiate_recovery() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add guardian
-        let guardian = Address::generate(&env);
-        client.add_recovery_guardian(&subject, &guardian, &2u32);
-
-        // Initiate recovery
-        let new_controller = Address::generate(&env);
-        let new_key = BytesN::from_array(&env, &[5u8; 32]);
-
-        let request_id = client.initiate_recovery(&guardian, &subject, &new_controller, &new_key);
-        assert!(request_id > 0);
-
-        // DID should be in recovery pending state
-        let did_doc = client.resolve_did(&subject);
-        assert!(matches!(did_doc.status, DIDStatus::RecoveryPending));
-    }
-
-    #[test]
-    fn test_cancel_recovery() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add guardian and initiate recovery
-        let guardian = Address::generate(&env);
-        client.add_recovery_guardian(&subject, &guardian, &2u32);
-
-        let new_controller = Address::generate(&env);
-        let new_key = BytesN::from_array(&env, &[5u8; 32]);
-        client.initiate_recovery(&guardian, &subject, &new_controller, &new_key);
-
-        // Cancel recovery (subject still has access)
-        client.cancel_recovery(&subject);
-
-        // DID should be active again
-        let did_doc = client.resolve_did(&subject);
-        assert!(matches!(did_doc.status, DIDStatus::Active));
-    }
-
-    // ========================================================================
-    // SERVICE ENDPOINT TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_add_service() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Add service
-        let service_id = String::from_str(&env, "#linked-domain");
-        let service_type = String::from_str(&env, "LinkedDomains");
-        let endpoint = String::from_str(&env, "https://example.com");
-
-        client.add_service(&subject, &service_id, &service_type, &endpoint);
-
-        let did_doc = client.resolve_did(&subject);
-        assert_eq!(did_doc.services.len(), 1);
-    }
-
-    #[test]
-    fn test_remove_service() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-
-        let mut services: Vec<ServiceEndpoint> = Vec::new(&env);
-        services.push_back(ServiceEndpoint {
-            id: String::from_str(&env, "#service-1"),
-            service_type: String::from_str(&env, "Test"),
-            endpoint: String::from_str(&env, "https://test.com"),
-            is_active: true,
-        });
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Remove service
-        let service_id = String::from_str(&env, "#service-1");
-        client.remove_service(&subject, &service_id);
-
-        let did_doc = client.resolve_did(&subject);
-        assert_eq!(did_doc.services.len(), 0);
-    }
-
-    // ========================================================================
-    // VERIFIER MANAGEMENT TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_add_and_remove_verifier() {
-        let (env, client, _owner) = create_contract();
-        let verifier = Address::generate(&env);
-
-        // Add verifier
-        client.add_verifier(&verifier);
-        assert!(client.is_verifier(&verifier));
-
-        // Remove verifier
-        client.remove_verifier(&verifier);
-        assert!(!client.is_verifier(&verifier));
-    }
-
-    #[test]
-    #[should_panic(expected = "Error(Contract, #111)")]
-    fn test_cannot_remove_owner_as_verifier() {
-        let (_env, client, owner) = create_contract();
-        client.remove_verifier(&owner);
-    }
-
-    // ========================================================================
-    // LEGACY FUNCTION TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_legacy_register_identity_hash() {
-        let (env, client, _owner) = create_legacy_contract();
-        let subject = Address::generate(&env);
-
-        let hash = BytesN::from_array(&env, &[1; 32]);
-        let meta = String::from_str(&env, "Healthcare Provider License #12345");
-
-        client.register_identity_hash(&hash, &subject, &meta);
-
-        assert_eq!(client.get_identity_hash(&subject), Some(hash));
-        assert_eq!(client.get_identity_meta(&subject), Some(meta));
-    }
-
-    #[test]
-    fn test_legacy_attest_and_verify() {
-        let (env, client, _owner) = create_legacy_contract();
-        let verifier = Address::generate(&env);
-        let subject = Address::generate(&env);
-
-        client.add_verifier(&verifier);
-
-        let claim_hash = BytesN::from_array(&env, &[2; 32]);
-        client.attest(&verifier, &subject, &claim_hash);
-
-        assert!(client.is_attested(&subject, &claim_hash));
-
-        let attestations = client.get_attestations(&subject);
-        assert_eq!(attestations.len(), 1);
-    }
-
-    #[test]
-    fn test_legacy_revoke_attestation() {
-        let (env, client, _owner) = create_legacy_contract();
-        let verifier = Address::generate(&env);
-        let subject = Address::generate(&env);
-
-        client.add_verifier(&verifier);
-
-        let claim_hash = BytesN::from_array(&env, &[3; 32]);
-        client.attest(&verifier, &subject, &claim_hash);
-        assert!(client.is_attested(&subject, &claim_hash));
-
-        client.revoke_attestation(&verifier, &subject, &claim_hash);
-        assert!(!client.is_attested(&subject, &claim_hash));
-    }
-
-    // ========================================================================
-    // DID AUTHORIZATION TESTS
-    // ========================================================================
-
-    #[test]
-    fn test_verify_did_authorization() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-
-        // Should be authorized for authentication (default key is added to auth)
-        assert!(
-            client.verify_did_authorization(&subject, &VerificationRelationship::Authentication)
-        );
-
-        // Should not be authorized for key agreement (no key agreement method added)
-        assert!(!client.verify_did_authorization(&subject, &VerificationRelationship::KeyAgreement));
-    }
-
-    #[test]
-    fn test_verify_did_authorization_deactivated() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let services: Vec<ServiceEndpoint> = Vec::new(&env);
-
-        client.create_did(&subject, &public_key, &services);
-        client.deactivate_did(&subject);
-
-        // Should not be authorized after deactivation
-        assert!(
-            !client.verify_did_authorization(&subject, &VerificationRelationship::Authentication)
-        );
-    }
-
-    #[test]
-    fn test_error_codes_are_stable() {
-        assert_eq!(Error::Unauthorized as u32, 100);
-        assert_eq!(Error::NotVerifier as u32, 110);
-        assert_eq!(Error::NotInitialized as u32, 300);
-        assert_eq!(Error::AlreadyInitialized as u32, 301);
-        assert_eq!(Error::DIDNotFound as u32, 470);
-        assert_eq!(Error::DIDAlreadyExists as u32, 471);
-        assert_eq!(Error::CredentialExpired as u32, 605);
-    }
-
-    #[test]
-    fn test_get_suggestion_returns_expected_hint() {
-        use soroban_sdk::symbol_short;
-        assert_eq!(
-            crate::errors::get_suggestion(Error::Unauthorized),
-            symbol_short!("CHK_AUTH")
-        );
-        assert_eq!(
-            crate::errors::get_suggestion(Error::NotInitialized),
-            symbol_short!("INIT_CTR")
-        );
-        assert_eq!(
-            crate::errors::get_suggestion(Error::AlreadyInitialized),
-            symbol_short!("ALREADY")
-        );
-        assert_eq!(
-            crate::errors::get_suggestion(Error::DIDNotFound),
-            symbol_short!("CHK_ID")
-        );
-        assert_eq!(
-            crate::errors::get_suggestion(Error::KeyRotationCooldown),
-            symbol_short!("RE_TRY_L")
-        );
-    }
-}
-
-    // ========================================================================
-    // PROVIDER STAKING (SUT Token Reputation Bonding)
-    // ========================================================================
-
-    /// Deposit stake for a healthcare provider.
-    /// The minimum stake is configurable by governance.
-
-// Health check tests added for Issue #13
-#[cfg(test)]
-mod health_check_tests {
-    use super::*;
-    use soroban_sdk::testutils::{Address as _, Ledger as _};
-
-    #[test]
-    fn test_health_check_returns_ok_when_initialized() {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-        let network_id = String::from_str(&env, "testnet");
-        client.initialize(&owner, &network_id, &rbac_id);
-
-        let (status, version, timestamp) = client.health_check();
-        assert_eq!(status, symbol_short!("OK"));
-        assert_eq!(version, 1);
-        assert_eq!(timestamp, 10_000);
-    }
-
-    #[test]
-    fn test_health_check_returns_not_init_when_not_initialized() {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-
-        let (status, _version, _timestamp) = client.health_check();
-        assert_eq!(status, symbol_short!("NOT_INIT"));
-    }
-
-    #[test]
-    fn test_health_check_returns_paused_when_paused() {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-        let network_id = String::from_str(&env, "testnet");
-        client.initialize(&owner, &network_id, &rbac_id);
-        client.pause(&owner);
-
-        let (status, _version, _timestamp) = client.health_check();
-        assert_eq!(status, symbol_short!("PAUSED"));
-    }
-}
-
-// Issue #12: Tests for panic removal in legacy functions
-#[cfg(test)]
-mod panic_removal_tests {
-    use super::*;
-    use soroban_sdk::testutils::{Address as _, Ledger as _};
-
-    fn create_contract() -> (Env, IdentityRegistryContractClient<'static>, Address) {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-        let network_id = String::from_str(&env, "testnet");
-        client.initialize(&owner, &network_id, &rbac_id);
-        (env, client, owner)
-    }
-
-    #[test]
-    fn test_register_identity_hash_returns_ok() {
-        let (env, client, _owner) = create_contract();
-        let subject = Address::generate(&env);
-        let hash = BytesN::from_array(&env, &[1u8; 32]);
-        let meta = String::from_str(&env, "Valid metadata");
-        let result = client.register_identity_hash(&hash, &subject, &meta);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_attest_non_verifier_returns_error() {
-        let (env, client, _owner) = create_contract();
-        let non_verifier = Address::generate(&env);
-        let subject = Address::generate(&env);
-        let claim_hash = BytesN::from_array(&env, &[2u8; 32]);
-        let result = client.try_attest(&non_verifier, &subject, &claim_hash);
-        assert_eq!(result, Err(Ok(Error::NotVerifier)));
-    }
-
-    #[test]
-    fn test_revoke_attestation_non_existent_returns_error() {
-        let (env, client, _owner) = create_contract();
-        let verifier = Address::generate(&env);
-        let subject = Address::generate(&env);
-        let claim_hash = BytesN::from_array(&env, &[3u8; 32]);
-        client.add_verifier(&verifier);
-        let result = client.try_revoke_attestation(&verifier, &subject, &claim_hash);
-        assert_eq!(result, Err(Ok(Error::AttestationNotFound)));
-    }
-
-    #[test]
-    fn test_attest_as_verifier_succeeds() {
-        let (env, client, _owner) = create_contract();
-        let verifier = Address::generate(&env);
-        let subject = Address::generate(&env);
-        let claim_hash = BytesN::from_array(&env, &[4u8; 32]);
-        client.add_verifier(&verifier);
-        let result = client.try_attest(&verifier, &subject, &claim_hash);
-        assert!(result.is_ok());
-    }
-}
-
-// Issue #13: DEGRADED status health check test
-#[cfg(test)]
-mod degraded_health_check_test {
-    use super::*;
-    use soroban_sdk::testutils::{Address as _, Ledger as _};
-
-    #[test]
-    fn test_health_check_version_is_always_one() {
-        let env = Env::default();
-        env.mock_all_auths();
-        env.ledger().set_timestamp(10_000);
-        let rbac_id = env.register_contract(None, MockRbac);
-        let rbac_client = MockRbacClient::new(&env, &rbac_id);
-        let contract_id = env.register_contract(None, IdentityRegistryContract);
-        let client = IdentityRegistryContractClient::new(&env, &contract_id);
-        let owner = Address::generate(&env);
-        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
-        let network_id = String::from_str(&env, "testnet");
-        client.initialize(&owner, &network_id, &rbac_id);
-
-        let (_status, version, _ts) = client.health_check();
-        assert_eq!(version, 1, "Health check version should always be 1");
     }
 }

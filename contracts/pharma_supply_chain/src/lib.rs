@@ -267,7 +267,11 @@ impl PharmaSupplyChainContract {
             return Err(Error::Unauthorized);
         }
 
-        if env.storage().persistent().has(&DataKey::BatchByLotNumber(lot_number.clone())) {
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::BatchByLotNumber(lot_number.clone()))
+        {
             return Err(Error::BatchAlreadyExists);
         }
 
@@ -285,7 +289,9 @@ impl PharmaSupplyChainContract {
             compliance_ok: true,
         };
         env.storage().persistent().set(&DataKey::Batch(id), &batch);
-        env.storage().persistent().set(&DataKey::BatchByLotNumber(lot_number.clone()), &id);
+        env.storage()
+            .persistent()
+            .set(&DataKey::BatchByLotNumber(lot_number.clone()), &id);
         env.events().publish(
             (symbol_short!("BATCH"), symbol_short!("CREATE")),
             (id, lot_number, env.ledger().timestamp()),

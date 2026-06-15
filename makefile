@@ -453,13 +453,5 @@ rollback-release: check-deps
 		exit 1; \
 	fi
 	@echo "🔄 Rolling back release v$(VERSION)..."
-	./scripts/rollback_release.sh $(VERSION)
+	./scripts/rollback_deployment.sh $(VERSION)
 
-# Release metrics and analytics
-release-metrics: check-deps
-	@if [ -z "$(VERSION)" ]; then \
-		echo "Usage: make release-metrics VERSION=X.Y.Z"; \
-		exit 1; \
-	fi
-	@echo "📊 Generating release metrics for v$(VERSION)..."
-	./scripts/release_metrics.sh $(VERSION)

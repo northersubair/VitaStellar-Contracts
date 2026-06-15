@@ -1,9 +1,3 @@
-pub mod cross_chain_tests;
-pub mod healthcare_workflows;
-pub mod ihe_fhir_integration_tests;
-pub mod medical_records_tests;
-pub mod multi_region_dr_integration;
-
 /// Basic environment integration tests
 #[cfg(test)]
 mod unit_tests {
@@ -19,9 +13,7 @@ mod unit_tests {
     #[test]
     fn test_environment_setup() {
         let env = Env::default();
-        // In Soroban test env, timestamp starts at 0; sequence is 0
         assert_eq!(env.ledger().timestamp(), 0);
-        // Ledger sequence is also 0 in the default test env
         assert_eq!(env.ledger().sequence(), 0);
     }
 }

@@ -1,3 +1,5 @@
+#![no_std]
+
 //! # Load Testing Framework
 //!
 //! Resolves issue #435: provides an on-chain load-testing harness that records
@@ -13,8 +15,6 @@
 //!   Soroban test environment.
 
 pub mod scenarios;
-
-#![no_std]
 
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, vec, Env, Vec};
 

@@ -291,7 +291,11 @@ impl MemoryTracker {
 
     /// Calculate memory delta (placeholder — real impl would use system APIs)
     pub fn delta(&self) -> Option<usize> {
-        if self.tracking { Some(0) } else { None }
+        if self.tracking {
+            Some(0)
+        } else {
+            None
+        }
     }
 }
 

@@ -37,7 +37,10 @@ impl Timelock {
         if env.storage().instance().has(&CFG) {
             return Err(Error::AlreadyInitialized);
         }
-        let cfg = TimelockConfig { admin, delay_seconds };
+        let cfg = TimelockConfig {
+            admin,
+            delay_seconds,
+        };
         env.storage().instance().set(&CFG, &cfg);
         Ok(())
     }
@@ -86,7 +89,7 @@ impl Timelock {
         );
         let tx = q.get(id).ok_or(Error::NotQueued)?;
         let now: u64 = env.ledger().timestamp();
-        let cfg: TimelockConfig = env
+        let _cfg: TimelockConfig = env
             .storage()
             .instance()
             .get(&CFG)
