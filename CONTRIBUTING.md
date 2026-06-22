@@ -59,6 +59,25 @@ bash scripts/check-naming.sh
 4. **Describe changes** in the PR description
 5. **Link related issues** if applicable
 
+### PR Description Format
+
+Every PR that resolves one or more issues **must** include a closing keyword in the PR **body** (not just the title):
+
+- `Closes #N`
+- `Fixes #N`
+- `Resolves #N`
+
+GitHub only auto-closes issues when these keywords appear in the PR description body.
+Without them, issues remain open after the fix lands and require manual cleanup.
+
+See the [GitHub documentation on closing keywords](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) for the full list of supported keywords and placement rules.
+
+Example PR body:
+```
+Closes #42
+Closes #43
+```
+
 ### PR Review Checklist
 - [ ] Code follows naming conventions
 - [ ] Tests are included and pass
