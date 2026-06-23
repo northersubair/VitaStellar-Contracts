@@ -37,9 +37,8 @@ pub fn verify_range_proof(env: &Env, proof: &RangeProof) -> Result<(), Error> {
     }
 
     // Check version tag
-    let version_ok = (0u32..4u32).all(|i| {
-        proof.proof_data.get(i).unwrap_or(0) == PROOF_VERSION[i as usize]
-    });
+    let version_ok =
+        (0u32..4u32).all(|i| proof.proof_data.get(i).unwrap_or(0) == PROOF_VERSION[i as usize]);
     if !version_ok {
         return Err(Error::VersionMismatch);
     }
@@ -48,7 +47,10 @@ pub fn verify_range_proof(env: &Env, proof: &RangeProof) -> Result<(), Error> {
     let expected = range_commitment(env, proof);
     let expected_arr = expected.to_array();
     for i in 0u32..32u32 {
-        let actual = proof.proof_data.get(4 + i).ok_or(Error::InvalidRangeProof)?;
+        let actual = proof
+            .proof_data
+            .get(4 + i)
+            .ok_or(Error::InvalidRangeProof)?;
         if actual != expected_arr[i as usize] {
             return Err(Error::InvalidRangeProof);
         }

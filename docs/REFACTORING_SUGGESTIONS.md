@@ -28,7 +28,7 @@ Patterns repeated across multiple contracts that should be extracted into shared
 
 - **Overflow-safe counter increment**: `count.checked_add(1).ok_or(Error::Overflow)?`
   - Appears in: `cross_chain_bridge`, `anomaly_detector`, `medical_records`
-  - Suggestion: `increment_counter(env, key)` utility
+  - ✅ **Resolved** — `access_utils::counter::increment_counter(env, key)` helper added in `libs/access_utils/src/counter.rs`; call sites in `cross_chain_access` migrated (Issue #64).
 
 ### 3. Dead Code Identification
 
@@ -39,8 +39,8 @@ cargo clippy --all -- -W dead_code 2>&1 | grep "warning: .* is never used"
 ```
 
 Known candidates (from last audit):
-- `contracts/ai_analytics/src/admin.rs` — `get_admin` function appears unused externally
-- `contracts/credential_notifications/src/lib.rs` — `initialize` is a no-op stub
+- ~~`contracts/ai_analytics/src/admin.rs` — `get_admin` function appears unused externally~~ ✅ **Resolved** — `ai_analytics` contract and its `admin.rs` no longer exist in the workspace; dead code removed by omission.
+- ~~`contracts/credential_notifications/src/lib.rs` — `initialize` is a no-op stub~~ ✅ **Resolved** — `credential_notifications` contract no longer exists in the workspace; stub removed by omission.
 
 ### 4. Performance Optimization Suggestions
 

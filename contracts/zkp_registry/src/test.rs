@@ -387,7 +387,12 @@ fn make_range_proof_fixture(
         created_at: 0,
     };
     let proof_data = make_range_proof_data(env, &rp);
-    (prover, vk_hash, encrypted_value, BytesN::from_array(env, &proof_id.to_array()))
+    (
+        prover,
+        vk_hash,
+        encrypted_value,
+        BytesN::from_array(env, &proof_id.to_array()),
+    )
 }
 
 fn init_rng(env: &Env) -> ZKPRegistryClient<'_> {
@@ -423,7 +428,16 @@ fn test_range_proof_valid_passes() {
     let prover = Address::generate(&env);
     let proof_id = BytesN::from_array(&env, &[0x01u8; 32]);
 
-    client.create_range_proof(&prover, &proof_id, &enc_value, &min, &max, &proof_data, &vk, &1_000);
+    client.create_range_proof(
+        &prover,
+        &proof_id,
+        &enc_value,
+        &min,
+        &max,
+        &proof_data,
+        &vk,
+        &1_000,
+    );
     let stored = client.get_range_proof(&proof_id);
     assert_eq!(stored.min_value, min);
     assert_eq!(stored.max_value, max);
@@ -438,8 +452,14 @@ fn test_range_proof_empty_proof_data_rejected() {
     let enc = Bytes::from_slice(&env, b"v");
     let vk = BytesN::from_array(&env, &[1u8; 32]);
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x02u8; 32]),
-        &enc, &1, &100, &Bytes::new(&env), &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x02u8; 32]),
+        &enc,
+        &1,
+        &100,
+        &Bytes::new(&env),
+        &vk,
+        &1_000,
     );
     assert!(r.is_err());
 }
@@ -454,8 +474,14 @@ fn test_range_proof_short_proof_data_rejected() {
     let vk = BytesN::from_array(&env, &[1u8; 32]);
     let short_data = Bytes::from_slice(&env, b"tooshort");
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x03u8; 32]),
-        &enc, &1, &100, &short_data, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x03u8; 32]),
+        &enc,
+        &1,
+        &100,
+        &short_data,
+        &vk,
+        &1_000,
     );
     assert!(r.is_err());
 }
@@ -480,12 +506,17 @@ fn test_range_proof_wrong_version_returns_version_mismatch() {
     };
     let mut pd_bytes = [0u8; 36];
     make_range_proof_data(&env, &rp).copy_into_slice(&mut pd_bytes);
-    // Corrupt the version tag
     pd_bytes[0] = 0xff;
     let bad_pd = Bytes::from_slice(&env, &pd_bytes);
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x04u8; 32]),
-        &enc, &1, &100, &bad_pd, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x04u8; 32]),
+        &enc,
+        &1,
+        &100,
+        &bad_pd,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::VersionMismatch)));
 }
@@ -513,8 +544,14 @@ fn test_range_proof_tampered_commitment_returns_invalid_range_proof() {
     pd_bytes[35] ^= 0x01;
     let bad_pd = Bytes::from_slice(&env, &pd_bytes);
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x05u8; 32]),
-        &enc, &10, &200, &bad_pd, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x05u8; 32]),
+        &enc,
+        &10,
+        &200,
+        &bad_pd,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRangeProof)));
 }
@@ -538,11 +575,17 @@ fn test_range_proof_wrong_vk_hash_rejected() {
         verification_gas: 1_000,
         created_at: 0,
     };
-    let proof_data = make_range_proof_data(&env, &rp); // uses correct_vk
+    let proof_data = make_range_proof_data(&env, &rp);
     // Submit with wrong_vk → commitment mismatch
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x06u8; 32]),
-        &enc, &1, &50, &proof_data, &wrong_vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x06u8; 32]),
+        &enc,
+        &1,
+        &50,
+        &proof_data,
+        &wrong_vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRangeProof)));
 }
@@ -568,8 +611,14 @@ fn test_range_proof_wrong_min_rejected() {
     let proof_data = make_range_proof_data(&env, &rp);
     // Submit with different min_value
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x07u8; 32]),
-        &enc, &5, &100, &proof_data, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x07u8; 32]),
+        &enc,
+        &5,
+        &100,
+        &proof_data,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRangeProof)));
 }
@@ -595,8 +644,14 @@ fn test_range_proof_wrong_max_rejected() {
     let proof_data = make_range_proof_data(&env, &rp);
     // Submit with different max_value → commitment mismatch
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x08u8; 32]),
-        &enc, &1, &1_000_000, &proof_data, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x08u8; 32]),
+        &enc,
+        &1,
+        &1_000_000,
+        &proof_data,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRangeProof)));
 }
@@ -620,11 +675,17 @@ fn test_range_proof_wrong_encrypted_value_rejected() {
         verification_gas: 1_000,
         created_at: 0,
     };
-    let proof_data = make_range_proof_data(&env, &rp); // matches enc
+    let proof_data = make_range_proof_data(&env, &rp);
     // Submit with different encrypted_value
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x09u8; 32]),
-        &forged_enc, &1, &100, &proof_data, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x09u8; 32]),
+        &forged_enc,
+        &1,
+        &100,
+        &proof_data,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRangeProof)));
 }
@@ -639,13 +700,17 @@ fn test_range_proof_min_equals_max_rejected() {
     let vk = BytesN::from_array(&env, &[1u8; 32]);
     let pd = Bytes::from_slice(&env, &[0u8; 36]);
     let r = client.try_create_range_proof(
-        &prover, &BytesN::from_array(&env, &[0x0au8; 32]),
-        &enc, &50, &50, &pd, &vk, &1_000,
+        &prover,
+        &BytesN::from_array(&env, &[0x0au8; 32]),
+        &enc,
+        &50,
+        &50,
+        &pd,
+        &vk,
+        &1_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidRange)));
 }
-
-// Property tests
 
 #[test]
 fn test_range_proof_prop_any_byte_flip_in_commitment_fails() {
@@ -673,11 +738,20 @@ fn test_range_proof_prop_any_byte_flip_in_commitment_fails() {
         let prover = Address::generate(&env);
         let pid = BytesN::from_array(&env, &[i as u8; 32]);
         let r = client.try_create_range_proof(
-            &prover, &pid,
-            &enc, &0, &u64::MAX,
-            &Bytes::from_slice(&env, &tampered), &vk, &1_000,
+            &prover,
+            &pid,
+            &enc,
+            &0,
+            &u64::MAX,
+            &Bytes::from_slice(&env, &tampered),
+            &vk,
+            &1_000,
         );
-        assert_eq!(r, Err(Ok(Error::InvalidRangeProof)), "flip at byte {i} should fail");
+        assert_eq!(
+            r,
+            Err(Ok(Error::InvalidRangeProof)),
+            "flip at byte {i} should fail"
+        );
     }
 }
 
@@ -723,4 +797,471 @@ fn test_range_proof_prop_commitment_is_deterministic() {
     let c1 = range_commitment(&env, &rp).to_array();
     let c2 = range_commitment(&env, &rp).to_array();
     assert_eq!(c1, c2);
+}
+
+// ==================== verify_recursive_proof_internal tests ====================
+
+use super::recursive_proof::{make_aggregated_vk, recursive_commitment};
+
+/// Registers a base ZKP so create_recursive_proof can look it up.
+fn register_base_proof(
+    env: &Env,
+    client: &ZKPRegistryClient<'_>,
+    proof_id: &BytesN<32>,
+    vk: &BytesN<32>,
+    pk: &BytesN<32>,
+) {
+    let admin = Address::generate(env);
+    let circuit_id = String::from_str(env, "base_circuit");
+    client.register_circuit(
+        &admin,
+        &circuit_id,
+        &ZKPType::SNARK,
+        &1,
+        &1,
+        &10,
+        &128,
+        vk,
+        pk,
+        &false,
+    );
+    let submitter = Address::generate(env);
+    let inputs = vec![env, Bytes::from_slice(env, b"base_input")];
+    let pd = Bytes::from_slice(env, b"0123456789abcdef0123456789abcdef");
+    env.as_contract(&client.address, || {
+        let proof_struct = ZKProof {
+            proof_type: ZKPType::SNARK,
+            hash_function: ZKPHashFunction::Poseidon,
+            circuit_id: circuit_id.clone(),
+            public_inputs: inputs.clone(),
+            proof_data: pd.clone(),
+            vk_hash: vk.clone(),
+            verification_gas: 1_000,
+            created_at: 0,
+        };
+        env.storage()
+            .persistent()
+            .set(&DataKey::ZKProof(proof_id.clone()), &proof_struct);
+    });
+}
+
+fn make_recursive_proof_struct(
+    env: &Env,
+    base_id: &BytesN<32>,
+    vk: &BytesN<32>,
+    depth: u32,
+) -> (RecursiveProof, Bytes) {
+    let inner = ZKProof {
+        proof_type: ZKPType::Recursive,
+        hash_function: ZKPHashFunction::Poseidon,
+        circuit_id: String::from_str(env, "rec_circuit"),
+        public_inputs: vec![env, Bytes::from_slice(env, b"rec_in")],
+        proof_data: Bytes::from_slice(env, b"0123456789abcdef0123456789abcdef"),
+        vk_hash: vk.clone(),
+        verification_gas: 1_000,
+        created_at: 0,
+    };
+    let rp = RecursiveProof {
+        base_proof_id: base_id.clone(),
+        recursive_proof: inner,
+        aggregated_vk: Bytes::new(env),
+        composition_depth: depth,
+        total_gas: 5_000,
+        composed_at: 0,
+    };
+    let agg_vk = make_aggregated_vk(env, &rp);
+    (rp, agg_vk)
+}
+
+fn init_rec(env: &Env) -> (ZKPRegistryClient<'_>, BytesN<32>, BytesN<32>) {
+    let id = env.register_contract(None, ZKPRegistry);
+    let client = ZKPRegistryClient::new(env, &id);
+    let admin = Address::generate(env);
+    client.initialize(&admin);
+    let vk = BytesN::from_array(env, &[0x22u8; 32]);
+    let pk = BytesN::from_array(env, &[0x33u8; 32]);
+    let base_id = BytesN::from_array(env, &[0x11u8; 32]);
+    register_base_proof(env, &client, &base_id, &vk, &pk);
+    (client, base_id, vk)
+}
+
+#[test]
+fn test_recursive_proof_depth_1_passes() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(1_000_000);
+    let (client, base_id, vk) = init_rec(&env);
+
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    client.create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &1,
+        &5_000,
+    );
+}
+
+#[test]
+fn test_recursive_proof_depth_3_passes() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(1_000_000);
+    let (client, base_id, vk) = init_rec(&env);
+
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 3);
+    let composer = Address::generate(&env);
+    client.create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &3,
+        &5_000,
+    );
+}
+
+#[test]
+fn test_recursive_proof_max_depth_10_passes() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(1_000_000);
+    let (client, base_id, vk) = init_rec(&env);
+
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 10);
+    let composer = Address::generate(&env);
+    client.create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &10,
+        &5_000,
+    );
+}
+
+#[test]
+fn test_recursive_proof_depth_0_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &0,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::RecursiveDepthExceeded)));
+}
+
+#[test]
+fn test_recursive_proof_depth_11_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, _) = make_recursive_proof_struct(&env, &base_id, &vk, 11);
+    let agg_vk = Bytes::from_slice(&env, &[0u8; 32]);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &11,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::RecursiveDepthExceeded)));
+}
+
+#[test]
+fn test_recursive_proof_empty_aggregated_vk_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, _) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::new(&env),
+        &1,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_short_aggregated_vk_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, _) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::from_slice(&env, b"tooshort"),
+        &1,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_wrong_base_proof_id_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let wrong_base_id = BytesN::from_array(&env, &[0xffu8; 32]);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &wrong_base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &1,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::ProofNotFound)));
+}
+
+#[test]
+fn test_recursive_proof_wrong_vk_hash_in_commitment_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 2);
+    let wrong_vk = BytesN::from_array(&env, &[0xeeu8; 32]);
+    let bad_inner = ZKProof {
+        vk_hash: wrong_vk,
+        ..rp.recursive_proof.clone()
+    };
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(&composer, &base_id, &bad_inner, &agg_vk, &2, &5_000);
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_wrong_depth_in_commitment_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &2,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_tampered_first_byte_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let mut agg_bytes = [0u8; 32];
+    agg_vk.copy_into_slice(&mut agg_bytes);
+    agg_bytes[0] ^= 0x01;
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::from_slice(&env, &agg_bytes),
+        &1,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_tampered_last_byte_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let mut agg_bytes = [0u8; 32];
+    agg_vk.copy_into_slice(&mut agg_bytes);
+    agg_bytes[31] ^= 0xff;
+    let composer = Address::generate(&env);
+    let r = client.try_create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::from_slice(&env, &agg_bytes),
+        &1,
+        &5_000,
+    );
+    assert_eq!(r, Err(Ok(Error::InvalidProof)));
+}
+
+#[test]
+fn test_recursive_proof_extra_vk_bytes_still_passes() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(1_000_000);
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let mut extended = agg_vk;
+    extended.append(&Bytes::from_slice(&env, b"extra_data"));
+    let composer = Address::generate(&env);
+    client.create_recursive_proof(
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &extended,
+        &1,
+        &5_000,
+    );
+}
+
+#[test]
+fn test_recursive_commitment_different_depths_produce_different_hashes() {
+    let env = Env::default();
+    let base_id = BytesN::from_array(&env, &[1u8; 32]);
+    let vk = BytesN::from_array(&env, &[2u8; 32]);
+    let inner = ZKProof {
+        proof_type: ZKPType::Recursive,
+        hash_function: ZKPHashFunction::Poseidon,
+        circuit_id: String::from_str(&env, "c"),
+        public_inputs: vec![&env, Bytes::from_slice(&env, b"x")],
+        proof_data: Bytes::from_slice(&env, b"0123456789abcdef0123456789abcdef"),
+        vk_hash: vk.clone(),
+        verification_gas: 1_000,
+        created_at: 0,
+    };
+    let rp1 = RecursiveProof {
+        base_proof_id: base_id.clone(),
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    let rp3 = RecursiveProof {
+        base_proof_id: base_id.clone(),
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 3,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_ne!(
+        recursive_commitment(&env, &rp1).to_array(),
+        recursive_commitment(&env, &rp3).to_array()
+    );
+}
+
+#[test]
+fn test_recursive_commitment_different_base_ids_produce_different_hashes() {
+    let env = Env::default();
+    let base_a = BytesN::from_array(&env, &[0xaau8; 32]);
+    let base_b = BytesN::from_array(&env, &[0xbbu8; 32]);
+    let vk = BytesN::from_array(&env, &[2u8; 32]);
+    let inner = ZKProof {
+        proof_type: ZKPType::Recursive,
+        hash_function: ZKPHashFunction::Poseidon,
+        circuit_id: String::from_str(&env, "c"),
+        public_inputs: vec![&env, Bytes::from_slice(&env, b"x")],
+        proof_data: Bytes::from_slice(&env, b"0123456789abcdef0123456789abcdef"),
+        vk_hash: vk.clone(),
+        verification_gas: 1_000,
+        created_at: 0,
+    };
+    let rp_a = RecursiveProof {
+        base_proof_id: base_a,
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    let rp_b = RecursiveProof {
+        base_proof_id: base_b,
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_ne!(
+        recursive_commitment(&env, &rp_a).to_array(),
+        recursive_commitment(&env, &rp_b).to_array()
+    );
+}
+
+#[test]
+fn test_recursive_commitment_deterministic() {
+    let env = Env::default();
+    let base_id = BytesN::from_array(&env, &[1u8; 32]);
+    let vk = BytesN::from_array(&env, &[2u8; 32]);
+    let inner = ZKProof {
+        proof_type: ZKPType::Recursive,
+        hash_function: ZKPHashFunction::Poseidon,
+        circuit_id: String::from_str(&env, "c"),
+        public_inputs: vec![&env, Bytes::from_slice(&env, b"x")],
+        proof_data: Bytes::from_slice(&env, b"0123456789abcdef0123456789abcdef"),
+        vk_hash: vk.clone(),
+        verification_gas: 1_000,
+        created_at: 0,
+    };
+    let rp = RecursiveProof {
+        base_proof_id: base_id,
+        recursive_proof: inner,
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 2,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_eq!(
+        recursive_commitment(&env, &rp).to_array(),
+        recursive_commitment(&env, &rp).to_array()
+    );
+}
+
+#[test]
+fn test_recursive_proof_prop_any_byte_flip_in_commitment_fails() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_timestamp(1_000_000);
+    let (client, base_id, vk) = init_rec(&env);
+    let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
+    let mut agg_bytes = [0u8; 32];
+    agg_vk.copy_into_slice(&mut agg_bytes);
+
+    for i in 0..32usize {
+        let mut tampered = agg_bytes;
+        tampered[i] ^= 0x40;
+        let composer = Address::generate(&env);
+        let r = client.try_create_recursive_proof(
+            &composer,
+            &base_id,
+            &rp.recursive_proof,
+            &Bytes::from_slice(&env, &tampered),
+            &1,
+            &5_000,
+        );
+        assert_eq!(
+            r,
+            Err(Ok(Error::InvalidProof)),
+            "flip at byte {i} should fail"
+        );
+    }
+}
 }

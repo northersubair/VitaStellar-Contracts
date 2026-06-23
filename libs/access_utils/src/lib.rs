@@ -1,5 +1,7 @@
 #![no_std]
 
+pub mod counter;
+
 /// Shared helper for the common admin authorization pattern used across contracts.
 ///
 /// The macro keeps each contract's existing `Self::require_admin(...)` helper and
