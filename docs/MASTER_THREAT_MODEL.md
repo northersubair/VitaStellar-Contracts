@@ -555,6 +555,19 @@ State Update → Event Emission → Cross-Chain Sync (if applicable)
 - **SOC 2**: Requires operational evidence and controls
 - **Action Items**: Framework gap analysis, control implementation, audits
 
+## ZKP Simulator Gap — Resolution Log
+
+| Item | Function | Threat | Status |
+|---|---|---|---|
+| TD-001 | `verify_zkp_internal` | Forged proofs accepted unconditionally | **Resolved** — SHA256 commitment check in `verifier.rs` (PR closes #69) |
+| TD-003 | `verify_range_proof_internal` | Range proofs accepted on length alone | Open |
+| TD-004 | `verify_recursive_proof_internal` | Recursive proofs accepted on depth alone | Open |
+
+The `verify_zkp_internal` simulator gap has been closed: proof_data must now carry the canonical commitment
+`SHA256("zkp:v1:prf:" || vk_hash || SHA256(concat(public_inputs)))`. Any tampered input—wrong vk_hash,
+wrong public inputs, random bytes—causes `Err(Error::InvalidProof)`. The fix is covered by 26 unit tests
+including a property test that verifies every single-byte flip in the commitment is rejected.
+
 ## Operational Recommendations
 
 ### Immediate Actions (0-3 months)
