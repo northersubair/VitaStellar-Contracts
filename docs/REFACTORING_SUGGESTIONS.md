@@ -28,7 +28,7 @@ Patterns repeated across multiple contracts that should be extracted into shared
 
 - **Overflow-safe counter increment**: `count.checked_add(1).ok_or(Error::Overflow)?`
   - Appears in: `cross_chain_bridge`, `anomaly_detector`, `medical_records`
-  - Suggestion: `increment_counter(env, key)` utility
+  - ✅ **Resolved** — `access_utils::counter::increment_counter(env, key)` helper added in `libs/access_utils/src/counter.rs`; call sites in `cross_chain_access` migrated (Issue #64).
 
 ### 3. Dead Code Identification
 

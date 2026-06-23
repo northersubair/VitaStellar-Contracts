@@ -7,6 +7,7 @@
 #[cfg(test)]
 mod test;
 
+use access_utils::counter::increment_counter;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, BytesN, Env, Map,
     String, Symbol, Vec,
@@ -1044,16 +1045,7 @@ impl CrossChainAccessContract {
     }
 
     fn get_and_increment_grant_count(env: &Env) -> Result<u64, Error> {
-        let count: u64 = env
-            .storage()
-            .persistent()
-            .get(&DataKey::GrantCount)
-            .unwrap_or(0);
-        let new_count = count.checked_add(1).ok_or(Error::Overflow)?;
-        env.storage()
-            .persistent()
-            .set(&DataKey::GrantCount, &new_count);
-        Ok(new_count)
+        increment_counter(env, &DataKey::GrantCount).ok_or(Error::Overflow)
     }
 
     fn get_grant_count(env: &Env) -> u64 {
@@ -1064,42 +1056,15 @@ impl CrossChainAccessContract {
     }
 
     fn get_and_increment_request_count(env: &Env) -> Result<u64, Error> {
-        let count: u64 = env
-            .storage()
-            .persistent()
-            .get(&DataKey::RequestCount)
-            .unwrap_or(0);
-        let new_count = count.checked_add(1).ok_or(Error::Overflow)?;
-        env.storage()
-            .persistent()
-            .set(&DataKey::RequestCount, &new_count);
-        Ok(new_count)
+        increment_counter(env, &DataKey::RequestCount).ok_or(Error::Overflow)
     }
 
     fn get_and_increment_audit_count(env: &Env) -> Result<u64, Error> {
-        let count: u64 = env
-            .storage()
-            .persistent()
-            .get(&DataKey::AuditCount)
-            .unwrap_or(0);
-        let new_count = count.checked_add(1).ok_or(Error::Overflow)?;
-        env.storage()
-            .persistent()
-            .set(&DataKey::AuditCount, &new_count);
-        Ok(new_count)
+        increment_counter(env, &DataKey::AuditCount).ok_or(Error::Overflow)
     }
 
     fn get_and_increment_swap_count(env: &Env) -> Result<u64, Error> {
-        let count: u64 = env
-            .storage()
-            .persistent()
-            .get(&DataKey::SwapCount)
-            .unwrap_or(0);
-        let new_count = count.checked_add(1).ok_or(Error::Overflow)?;
-        env.storage()
-            .persistent()
-            .set(&DataKey::SwapCount, &new_count);
-        Ok(new_count)
+        increment_counter(env, &DataKey::SwapCount).ok_or(Error::Overflow)
     }
 
     fn can_revoke_access(env: &Env, caller: &Address, grant: &AccessGrant) -> bool {
