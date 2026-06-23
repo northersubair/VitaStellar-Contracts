@@ -823,4 +823,6 @@
 | 14 | RecursiveDepthExceeded | Generated from contract source |
 | 15 | InvalidHashFunction | Generated from contract source |
 | 16 | CommitmentMismatch | Generated from contract source |
+| 17 | InvalidRangeProof | Generated from contract source |
+| 18 | VersionMismatch | Generated from contract source |
 
