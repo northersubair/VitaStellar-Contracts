@@ -4,6 +4,8 @@
 #[cfg(test)]
 mod test;
 
+mod recursive_proof;
+
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env,
     String, Symbol, Vec,
@@ -597,13 +599,13 @@ impl ZKPRegistry {
         Ok(true)
     }
 
-    fn verify_recursive_proof_internal(_env: &Env, proof: &RecursiveProof) -> Result<bool, Error> {
-        if proof.recursive_proof.proof_data.is_empty() {
-            return Ok(false);
+    fn verify_recursive_proof_internal(env: &Env, proof: &RecursiveProof) -> Result<bool, Error> {
+        if proof.composition_depth == 0 || proof.composition_depth > 10 {
+            return Err(Error::RecursiveDepthExceeded);
         }
-        if proof.composition_depth > 10 {
-            return Ok(false);
-        }
+        // Cryptographic commitment check: aggregated_vk[0..32] must bind to
+        // base_proof_id, recursive_proof.vk_hash, and composition_depth.
+        recursive_proof::verify_recursive_step(env, proof)?;
         Ok(true)
     }
 
